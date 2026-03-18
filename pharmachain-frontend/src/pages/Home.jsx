@@ -7,25 +7,25 @@ return(
 <h1>PharmaChain</h1>
 
 <p>
-Blockchain powered drug authenticity verification
+Secure Blockchain-Based Drug Authentication System
 </p>
 
 <div className="dashboard">
 
 <div className="box">
-<a href="/manufacturer">Manufacturer</a>
+<a href="/login">Stakeholder Login</a>
 </div>
 
 <div className="box">
-<a href="/distributor">Distributor</a>
-</div>
-
-<div className="box">
-<a href="/pharmacy">Pharmacy</a>
+<a href="/register">Register Company</a>
 </div>
 
 <div className="box">
 <a href="/verify">Verify Medicine</a>
+</div>
+
+<div className="box">
+<a href="/admin">Admin Dashboard</a>
 </div>
 
 </div>
