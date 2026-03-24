@@ -18,7 +18,7 @@ saveUser({
   name,
   role,
   license,
-  approved:false
+  
 });
 
 alert("Registered. Waiting for admin approval.");

@@ -1,4 +1,4 @@
-import { getUsers, approveUser } from "../utils/auth";
+import { getUsers, updateStatus } from "../utils/auth";
 import { useState } from "react";
 
 export default function Admin(){
@@ -19,12 +19,19 @@ function login(){
   }
 }
 
+// ✅ approve
 function approve(address){
-  approveUser(address);
+  updateStatus(address,"approved");
   setUsers(getUsers());
 }
 
-// 🔒 if not logged in → show login UI
+// ❌ reject
+function reject(address){
+  updateStatus(address,"rejected");
+  setUsers(getUsers());
+}
+
+// 🔒 login UI
 if(!isLoggedIn){
   return(
     <div className="container">
@@ -55,23 +62,46 @@ return(
 
 <h2>Admin Dashboard</h2>
 
-{users.map(u=>(
+{users.map(u=>{
+
+// 🧠 handle old + new system
+const status = u.status || (u.approved ? "approved" : "pending");
+
+return(
+
 <div className="card" key={u.address}>
 
 <p><b>{u.name}</b></p>
-<p>{u.role}</p>
-<p>{u.address}</p>
+<p>Role: {u.role}</p>
+<p>Address: {u.address}</p>
 
-{u.approved ? (
-<p>Approved</p>
-) : (
+<p>
+Status: 
+{status === "pending" && " Pending"}
+{status === "approved" && " Approved"}
+{status === "rejected" && " Rejected"}
+</p>
+
+{status === "pending" && (
+<div style={{display:"flex", gap:"10px"}}>
+
 <button onClick={()=>approve(u.address)}>
 Approve
 </button>
+
+<button
+style={{background:"red"}}
+onClick={()=>reject(u.address)}
+>
+Reject
+</button>
+
+</div>
 )}
 
 </div>
-))}
+
+)})}
 
 </div>
 

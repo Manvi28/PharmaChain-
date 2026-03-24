@@ -18,8 +18,13 @@ if(!user){
   return;
 }
 
-if(!user.approved){
+if(user.status === "pending"){
   alert("Waiting for admin approval");
+  return;
+}
+
+if(user.status === "rejected"){
+  alert("Your registration was rejected");
   return;
 }
 
