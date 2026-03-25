@@ -2,59 +2,123 @@ import { useState } from "react";
 import { connectWallet } from "../utils/web3";
 import { saveUser } from "../utils/auth";
 
-export default function Register(){
+export default function Register() {
 
-const [name,setName]=useState("");
-const [role,setRole]=useState("manufacturer");
-const [license,setLicense]=useState("");
+  const [role, setRole] = useState("manufacturer");
 
-async function register(){
+  const [formData, setFormData] = useState({
+    companyName: "",
+    licenseNumber: "",
+    location: ""
+  });
 
-const signer = await connectWallet();
-const address = await signer.getAddress();
+  const handleChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    });
+  };
 
-saveUser({
-  address,
-  name,
-  role,
-  license,
-  
-});
+  async function register() {
 
-alert("Registered. Waiting for admin approval.");
+    // basic validation
+    if (!formData.companyName || !formData.licenseNumber || !formData.location) {
+      alert("Please fill all fields");
+      return;
+    }
 
-}
+    if (formData.licenseNumber.length < 5) {
+      alert("Invalid License Number");
+      return;
+    }
 
-return(
+    const signer = await connectWallet();
+    const address = await signer.getAddress();
 
-<div className="container">
-<div className="card">
+    saveUser({
+      address,
+      role,
+      companyName: formData.companyName,
+      licenseNumber: formData.licenseNumber,
+      location: formData.location,
+      status: "Pending"
+    });
 
-<h2>Register</h2>
+    alert("Registered. Waiting for admin approval.");
+  }
 
-<input
-placeholder="Company Name"
-onChange={e=>setName(e.target.value)}
-/>
+  return (
+    <div className="container">
+      <div className="card">
 
-<select onChange={e=>setRole(e.target.value)}>
-<option value="manufacturer">Manufacturer</option>
-<option value="distributor">Distributor</option>
-<option value="pharmacy">Pharmacy</option>
-</select>
+        <h2>Register</h2>
 
-<input
-placeholder="License Number"
-onChange={e=>setLicense(e.target.value)}
-/>
+        {/* ROLE SELECT */}
+        <select value={role} onChange={e => setRole(e.target.value)}>
+          <option value="manufacturer">Manufacturer</option>
+          <option value="distributor">Distributor</option>
+          <option value="pharmacy">Pharmacy</option>
+        </select>
 
-<button onClick={register}>
-Submit
-</button>
+        {/* ================== MANUFACTURER ================== */}
+        {role === "manufacturer" && (
+          <>
+            <input
+              placeholder="Company Name"
+              onChange={e => handleChange("companyName", e.target.value)}
+            />
+            <input
+              placeholder="Drug License Number"
+              onChange={e => handleChange("licenseNumber", e.target.value)}
+            />
+            <input
+              placeholder="Manufacturing Location"
+              onChange={e => handleChange("location", e.target.value)}
+            />
+          </>
+        )}
 
-</div>
-</div>
+        {/* ================== DISTRIBUTOR ================== */}
+        {role === "distributor" && (
+          <>
+            <input
+              placeholder="Company Name"
+              onChange={e => handleChange("companyName", e.target.value)}
+            />
+            <input
+              placeholder="Transport License / Business ID"
+              onChange={e => handleChange("licenseNumber", e.target.value)}
+            />
+            <input
+              placeholder="Operating Region (City/State)"
+              onChange={e => handleChange("location", e.target.value)}
+            />
+          </>
+        )}
 
-)
+        {/* ================== PHARMACY ================== */}
+        {role === "pharmacy" && (
+          <>
+            <input
+              placeholder="Pharmacy Name"
+              onChange={e => handleChange("companyName", e.target.value)}
+            />
+            <input
+              placeholder="Pharmacy License Number"
+              onChange={e => handleChange("licenseNumber", e.target.value)}
+            />
+            <input
+              placeholder="Address"
+              onChange={e => handleChange("location", e.target.value)}
+            />
+          </>
+        )}
 
+        <button onClick={register}>
+          Submit
+        </button>
+
+      </div>
+    </div>
+  );
 }

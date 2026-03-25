@@ -6,182 +6,230 @@ import { getBatches } from "../utils/batchStorage";
 
 export default function Verify(){
 
-const [batchId,setBatchId] = useState("");
-const [data,setData] = useState(null);
-const [history,setHistory] = useState([]);
-const [trustScore,setTrustScore] = useState(0);
-const [status,setStatus] = useState("");
+  const [batchId,setBatchId] = useState("");
+  const [data,setData] = useState(null);
+  const [history,setHistory] = useState([]);
+  const [trustScore,setTrustScore] = useState(0);
+  const [status,setStatus] = useState("");
+  const [error,setError] = useState("");
 
-// 🔍 FETCH DATA
-async function fetchBatch(id){
+  // 🔍 FETCH DATA
+  async function fetchBatch(id){
 
-const provider = new ethers.BrowserProvider(window.ethereum);
-const contract = await getContract(provider);
+    if(!id){
+      alert("Enter Batch ID");
+      return;
+    }
 
-const result = await contract.getBatch(id);
+    try{
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = await getContract(provider);
 
-setData(result);
+      const result = await contract.getBatch(id);
 
-// 🔥 LOCAL STORAGE HISTORY
-const batches = getBatches();
-const localBatch = batches.find(b => b.batchId === id);
+      setData(result);
+      setError("");
 
-if(localBatch){
+      const batches = getBatches();
+      const localBatch = batches.find(b => b.batchId === id);
 
-setHistory(localBatch.history);
+      if(localBatch){
 
-// 🧠 TRUST SCORE CALCULATION
-let score = 50;
+        setHistory(localBatch.history);
 
-if(localBatch.history.length >= 1) score += 20;
-if(localBatch.history.length >= 2) score += 20;
-if(localBatch.history.length >= 3) score += 10;
+        // 🧠 TRUST SCORE
+        let score = 40;
 
-setTrustScore(score);
+        if(localBatch.history.length >= 1) score += 20;
+        if(localBatch.history.length >= 2) score += 20;
+        if(localBatch.history.length >= 3) score += 20;
 
-// STATUS
-if(score >= 80){
-  setStatus("authentic");
-}else{
-  setStatus("suspicious");
-}
+        setTrustScore(score);
 
-}else{
-setHistory([]);
-setStatus("not_found");
-setTrustScore(0);
-}
+        // 📅 EXPIRY CHECK
+        const currentTime = Math.floor(Date.now() / 1000);
 
-}
+        if(Number(result.expiryDate) < currentTime){
+          setStatus("expired");
+        }
+        else if(score >= 80){
+          setStatus("authentic");
+        }
+        else{
+          setStatus("suspicious");
+        }
 
-// 📷 QR SCANNER
-useEffect(()=>{
+      }else{
+        setHistory([]);
+        setStatus("not_found");
+        setTrustScore(0);
+      }
 
-const scanner = new Html5QrcodeScanner(
-"reader",
-{fps:10,qrbox:250}
-);
+    }catch(err){
+      console.log(err);
+      setError("Error fetching batch. Check contract or network.");
+      setStatus("not_found");
+    }
+  }
 
-scanner.render(
+  // 📷 QR SCANNER
+  useEffect(()=>{
 
-(decodedText)=>{
+    const scanner = new Html5QrcodeScanner(
+      "reader",
+      {fps:10,qrbox:250}
+    );
 
-const parts = decodedText.split("batchId=");
+    scanner.render(
 
-if(parts.length>1){
+      (decodedText)=>{
 
-const id = parts[1];
+        const parts = decodedText.split("batchId=");
 
-setBatchId(id);
+        if(parts.length>1){
 
-fetchBatch(id);
+          const id = parts[1];
 
-}
+          setBatchId(id);
+          fetchBatch(id);
+        }
 
-scanner.clear();
+        scanner.clear();
+      },
 
-},
+      (error)=>{}
+    );
 
-(error)=>{}
+  },[]);
 
-);
+  return(
 
-},[]);
+    <div className="container">
 
-return(
+      <div className="card">
 
-<div className="container">
+        <h2>Verify Medicine</h2>
 
-<div className="card">
+        {/* QR SCANNER */}
+        <div id="reader"></div>
 
-<h2>Scan Medicine QR</h2>
+        {/* MANUAL INPUT */}
+        <input
+          placeholder="Enter Batch ID manually"
+          value={batchId}
+          onChange={(e)=>setBatchId(e.target.value)}
+        />
 
-<div id="reader"></div>
+        <button onClick={()=>fetchBatch(batchId)}>
+          Verify
+        </button>
 
-{batchId && (
-<p><b>Batch ID:</b> {batchId}</p>
-)}
+        {error && (
+          <p style={{color:"red"}}>{error}</p>
+        )}
 
-{/* BLOCKCHAIN DETAILS */}
-{data && (
+        {batchId && (
+          <p><b>Batch ID:</b> {batchId}</p>
+        )}
 
-<div style={{marginTop:"20px"}}>
+        {/* BLOCKCHAIN DETAILS */}
+        {data && (
 
-<h3>Medicine Details</h3>
+          <div style={{marginTop:"20px"}}>
 
-<p><b>Name:</b> {data.medicineName}</p>
-<p><b>Location:</b> {data.location}</p>
-<p><b>Expiry:</b> {data.expiryDate.toString()}</p>
-<p><b>Current Owner:</b> {data.currentOwner}</p>
+            <h3>Medicine Details</h3>
 
-</div>
+            <p><b>Name:</b> {data.medicineName}</p>
 
-)}
+            <p><b>Location:</b> {data.location}</p>
 
-{/* SUPPLY CHAIN */}
-{history.length > 0 && (
+            {/* ✅ FIXED EXPIRY FORMAT */}
+            <p><b>Expiry:</b> {
+              new Date(Number(data.expiryDate) * 1000).toLocaleDateString()
+            }</p>
 
-<div style={{marginTop:"20px"}}>
+            {/* ✅ SHORT WALLET */}
+            <p><b>Current Owner:</b> {
+              `${data.currentOwner.slice(0,6)}...${data.currentOwner.slice(-4)}`
+            }</p>
 
-<h3>Supply Chain</h3>
+          </div>
 
-{history.map((h,i)=>(
-<p key={i}>
-{h.step} → {h.owner}
-</p>
-))}
+        )}
 
-</div>
+        {/* SUPPLY CHAIN */}
+        {history.length > 0 && (
 
-)}
+          <div style={{marginTop:"20px"}}>
 
-{/* TRUST SCORE */}
-{trustScore > 0 && (
+            <h3>Supply Chain</h3>
 
-<div style={{marginTop:"20px"}}>
+            {history.map((h,i)=>(
+              <p key={i}>
+                {h.step} → {h.owner.slice(0,6)}...{h.owner.slice(-4)}
+              </p>
+            ))}
 
-<h3>Trust Score</h3>
+          </div>
 
-<p style={{fontSize:"20px"}}>
-{trustScore}/100
-</p>
+        )}
 
-</div>
+        {/* TRUST SCORE */}
+        {trustScore > 0 && (
 
-)}
+          <div style={{marginTop:"20px"}}>
 
-{/* STATUS */}
-{status && (
+            <h3>Trust Score</h3>
 
-<div style={{marginTop:"20px"}}>
+            <p style={{
+              fontSize:"20px",
+              color: trustScore >= 80 ? "green" : "orange"
+            }}>
+              {trustScore}/100
+            </p>
 
-<h3>Verification Result</h3>
+          </div>
 
-{status === "authentic" && (
-<p style={{color:"green", fontWeight:"bold"}}>
-✔ Authentic Medicine
-</p>
-)}
+        )}
 
-{status === "suspicious" && (
-<p style={{color:"orange", fontWeight:"bold"}}>
-⚠ Suspicious Product
-</p>
-)}
+        {/* STATUS */}
+        {status && (
 
-{status === "not_found" && (
-<p style={{color:"red", fontWeight:"bold"}}>
-❌ No Record Found
-</p>
-)}
+          <div style={{marginTop:"20px"}}>
 
-</div>
+            <h3>Verification Result</h3>
 
-)}
+            {status === "authentic" && (
+              <p style={{color:"green", fontWeight:"bold", fontSize:"18px"}}>
+                ✔ AUTHENTIC MEDICINE
+              </p>
+            )}
 
-</div>
+            {status === "suspicious" && (
+              <p style={{color:"orange", fontWeight:"bold", fontSize:"18px"}}>
+                ⚠ SUSPICIOUS PRODUCT
+              </p>
+            )}
 
-</div>
+            {status === "expired" && (
+              <p style={{color:"red", fontWeight:"bold", fontSize:"18px"}}>
+                ❌ EXPIRED MEDICINE
+              </p>
+            )}
 
-)
+            {status === "not_found" && (
+              <p style={{color:"red", fontWeight:"bold", fontSize:"18px"}}>
+                ❌ NO RECORD FOUND
+              </p>
+            )}
+
+          </div>
+
+        )}
+
+      </div>
+
+    </div>
+
+  )
 }

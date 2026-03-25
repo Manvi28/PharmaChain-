@@ -3,165 +3,208 @@ import { connectWallet } from "../utils/web3";
 import { getContract } from "../utils/contract";
 import { QRCodeCanvas } from "qrcode.react";
 
-// ✅ IMPORT STORAGE UTILS
 import { saveBatch, getBatches, updateBatchHistory } from "../utils/batchStorage";
 
 export default function Manufacturer(){
 
-const [batchId,setBatchId]=useState("");
-const [medicine,setMedicine]=useState("");
-const [expiry,setExpiry]=useState("");
-const [location,setLocation]=useState("");
-const [qr,setQr]=useState("");
+  const [batchId,setBatchId]=useState("");
+  const [medicine,setMedicine]=useState("");
+  const [expiry,setExpiry]=useState("");
+  const [location,setLocation]=useState("");
+  const [qr,setQr]=useState("");
 
-// NEW STATES
-const [batches,setBatches]=useState([]);
-const [transferId,setTransferId]=useState("");
-const [distributor,setDistributor]=useState("");
+  const [batches,setBatches]=useState([]);
+  const [transferId,setTransferId]=useState("");
+  const [distributor,setDistributor]=useState("");
 
-// ✅ LOAD BATCHES FROM STORAGE
-useEffect(()=>{
-  setBatches(getBatches());
-},[]);
+  const [address,setAddress]=useState("");
 
-// ✅ CREATE BATCH (UNCHANGED CORE LOGIC + STORAGE ADDED)
-async function createBatch(){
+  // 🔐 GET WALLET ADDRESS
+  useEffect(()=>{
+    async function load(){
+      const signer = await connectWallet();
+      const addr = await signer.getAddress();
+      setAddress(addr);
+    }
+    load();
 
-const signer = await connectWallet();
-const address = await signer.getAddress();
+    setBatches(getBatches());
+  },[]);
 
-const contract = await getContract(signer);
+  // ✅ CREATE BATCH
+  async function createBatch(){
 
-await contract.createBatch(
-batchId,
-medicine,
-expiry,
-location
-);
+    if(!batchId || !medicine || !expiry || !location){
+      alert("All fields required");
+      return;
+    }
 
-// ✅ SAVE USING batchStorage.js
-saveBatch({
-  batchId,
-  medicine,
-  expiry,
-  location,
-  owner: address
-});
+    try{
+      const signer = await connectWallet();
+      const addr = await signer.getAddress();
 
-// refresh UI
-setBatches(getBatches());
+      const contract = await getContract(signer);
 
-const link=`http://localhost:5173/verify?batchId=${batchId}`;
+      await contract.createBatch(
+        batchId,
+        medicine,
+        expiry,
+        location
+      );
 
-setQr(link);
+      // SAVE LOCALLY
+      saveBatch({
+        batchId,
+        medicine,
+        expiry,
+        location,
+        owner: addr,
+        history: [
+          {
+            step: "Manufactured",
+            owner: addr
+          }
+        ]
+      });
 
-alert("Batch Created");
+      setBatches(getBatches());
 
-}
+      // ✅ FIXED QR LINK
+      const link = `${window.location.origin}/verify?batchId=${batchId}`;
+      setQr(link);
 
-// ✅ TRANSFER OWNERSHIP (BLOCKCHAIN + STORAGE SYNC)
-async function transferOwnership(){
+      alert("Batch Created Successfully");
 
-const signer = await connectWallet();
-const contract = await getContract(signer);
+    }catch(err){
+      console.log(err);
+      alert("Error creating batch");
+    }
+  }
 
-await contract.transferOwnership(transferId, distributor);
+  // ✅ TRANSFER OWNERSHIP
+  async function transferOwnership(){
 
-// ✅ UPDATE HISTORY USING batchStorage
-updateBatchHistory(transferId, distributor);
+    if(!transferId || !distributor){
+      alert("Enter batch ID and distributor address");
+      return;
+    }
 
-// refresh UI
-setBatches(getBatches());
+    try{
+      const signer = await connectWallet();
+      const contract = await getContract(signer);
 
-alert("Ownership Transferred");
+      await contract.transferOwnership(transferId, distributor);
 
-}
+      // UPDATE LOCAL STORAGE
+      updateBatchHistory(transferId, distributor);
 
-return(
+      setBatches(getBatches());
 
-<div className="container">
+      alert("Ownership Transferred");
 
-{/* CREATE BATCH */}
-<div className="card">
+    }catch(err){
+      console.log(err);
+      alert("Transfer failed");
+    }
+  }
 
-<h2>Create Drug Batch</h2>
+  return(
 
-<input placeholder="Batch ID"
-onChange={e=>setBatchId(e.target.value)}
-/>
+    <div className="container">
 
-<input placeholder="Medicine Name"
-onChange={e=>setMedicine(e.target.value)}
-/>
+      {/* CREATE BATCH */}
+      <div className="card">
 
-<input placeholder="Expiry Timestamp"
-onChange={e=>setExpiry(e.target.value)}
-/>
+        <h2>Create Drug Batch</h2>
 
-<input placeholder="Location"
-onChange={e=>setLocation(e.target.value)}
-/>
+        <input
+          placeholder="Batch ID"
+          onChange={e=>setBatchId(e.target.value)}
+        />
 
-<button onClick={createBatch}>
-Create Batch
-</button>
+        <input
+          placeholder="Medicine Name"
+          onChange={e=>setMedicine(e.target.value)}
+        />
 
-{qr &&(
+        {/* ✅ DATE INPUT FIX */}
+        <input
+          type="date"
+          onChange={e=>{
+            const timestamp = Math.floor(new Date(e.target.value).getTime()/1000);
+            setExpiry(timestamp);
+          }}
+        />
 
-<div style={{marginTop:"20px"}}>
+        <input
+          placeholder="Manufacturing Location"
+          onChange={e=>setLocation(e.target.value)}
+        />
 
-<h3>QR Code</h3>
+        <button onClick={createBatch}>
+          Create Batch
+        </button>
 
-<QRCodeCanvas value={qr} size={200}/>
+        {qr &&(
+          <div style={{marginTop:"20px"}}>
+            <h3>QR Code</h3>
+            <QRCodeCanvas value={qr} size={200}/>
+            <p style={{fontSize:"12px"}}>{qr}</p>
+          </div>
+        )}
 
-</div>
+      </div>
 
-)}
+      {/* TRANSFER */}
+      <div className="card">
 
-</div>
+        <h3>Transfer to Distributor</h3>
 
-{/* TRANSFER */}
-<div className="card">
+        <input
+          placeholder="Batch ID"
+          onChange={e=>setTransferId(e.target.value)}
+        />
 
-<h3>Transfer to Distributor</h3>
+        <input
+          placeholder="Distributor Wallet Address"
+          onChange={e=>setDistributor(e.target.value)}
+        />
 
-<input
-placeholder="Batch ID"
-onChange={e=>setTransferId(e.target.value)}
-/>
+        <button onClick={transferOwnership}>
+          Transfer Ownership
+        </button>
 
-<input
-placeholder="Distributor Address"
-onChange={e=>setDistributor(e.target.value)}
-/>
+      </div>
 
-<button onClick={transferOwnership}>
-Transfer Ownership
-</button>
+      {/* VIEW BATCHES */}
+      <div className="card">
 
-</div>
+        <h3>Your Batches</h3>
 
-{/* VIEW BATCHES */}
-<div className="card">
+        {batches.length === 0 && <p>No batches created yet</p>}
 
-<h3>Your Batches</h3>
+        {batches.map(b=>(
 
-{batches.length === 0 && <p>No batches created yet</p>}
+          <div key={b.batchId} style={{borderBottom:"1px solid #ddd",padding:"10px"}}>
 
-{batches.map(b=>(
-<div key={b.batchId} style={{borderBottom:"1px solid #ddd",padding:"10px"}}>
+            <p><b>{b.batchId}</b></p>
+            <p>Medicine: {b.medicine}</p>
+            <p>Location: {b.location}</p>
+            <p>Owner: {b.owner}</p>
 
-<p><b>{b.batchId}</b></p>
-<p>Medicine: {b.medicine}</p>
-<p>Owner: {b.owner}</p>
+            <p>
+              Status: {b.owner === address 
+                ? "You own this batch" 
+                : "Transferred"}
+            </p>
 
-</div>
-))}
+          </div>
 
-</div>
+        ))}
 
-</div>
+      </div>
 
-)
+    </div>
 
+  )
 }
