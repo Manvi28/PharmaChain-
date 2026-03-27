@@ -48,7 +48,14 @@ export default function Manufacturer(){
       const signer = await connectWallet();
       const addr = await signer.getAddress();
       const contract = await getContract(signer);
+      const existing = getBatches().find(
+  b => String(b.batchId) === String(batchId)
+);
 
+if(existing){
+  alert("Batch ID already exists");
+  return;
+}
       await contract.createBatch(batchId, medicine, expiry, location);
 
       saveBatch({
@@ -186,12 +193,13 @@ export default function Manufacturer(){
 
         </div>
 
-        {/* BATCH LIST + VIEW ONLY REVIEWS */}
+        {/* BATCH LIST */}
         <div className="manufacturer-card">
 
           <h3>Your Batches</h3>
 
           {batches.map(b=>(
+
             <div key={b.batchId} className="batch-item">
 
               <p><b>{b.batchId}</b></p>
@@ -199,10 +207,55 @@ export default function Manufacturer(){
               <p>{b.location}</p>
               <p>Status: {b.owner === address ? "Owned" : "Transferred"}</p>
 
-              {/* VIEW ONLY */}
+              {/* ✅ REJECTION DISPLAY */}
+              {b.status === "Rejected" && (
+                <div style={{
+                  marginTop: "10px",
+                  padding: "10px",
+                  border: "1px solid red",
+                  borderRadius: "6px",
+                  background: "#ffe6e6"
+                }}>
+                  <p style={{color:"red"}}>
+                    <b>❌ Batch Rejected by Distributor</b>
+                  </p>
+
+                  <p><b>Reason:</b> {b.rejectionReason}</p>
+
+                  <p><b>Proof:</b></p>
+
+                  {/* ✅ SAFE IMAGE DISPLAY */}
+                  {b.proof ? (
+                    b.proof.startsWith("data:image") ? (
+                      <img
+                        src={b.proof}
+                        alt="proof"
+                        style={{
+                          width: "200px",
+                          marginTop: "5px",
+                          borderRadius: "6px",
+                          border: "1px solid #ccc"
+                        }}
+                      />
+                    ) : (
+                      <p style={{color:"red"}}>
+                        ⚠️ Image not stored correctly
+                      </p>
+                    )
+                  ) : (
+                    <p>No proof available</p>
+                  )}
+
+                  <p style={{fontSize:"12px", color:"gray"}}>
+                    Rejection message received from distributor
+                  </p>
+                </div>
+              )}
+
               <ReviewSection batchId={b.batchId} readOnly={true} />
 
             </div>
+
           ))}
 
         </div>

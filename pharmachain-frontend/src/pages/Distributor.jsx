@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { connectWallet } from "../utils/web3";
 import { getContract } from "../utils/contract";
-import { getBatches, updateBatchHistory } from "../utils/batchStorage";
+import { getBatches, updateBatchHistory, rejectBatch } from "../utils/batchStorage";
 import { ethers } from "ethers";
 import "../styles/distributor.css";
 
@@ -10,16 +10,20 @@ export default function Distributor(){
 const [batchId,setBatchId]=useState("");
 const [owner,setOwner]=useState("");
 
-// NEW STATES
+// EXISTING STATES
 const [batches,setBatches]=useState([]);
 const [viewBatch,setViewBatch]=useState(null);
 
-// LOAD LOCAL STORAGE BATCHES
+// STATES
+const [rejectReasons,setRejectReasons]=useState({});
+const [proofFiles,setProofFiles]=useState({});
+
+// LOAD LOCAL STORAGE
 useEffect(()=>{
   setBatches(getBatches());
 },[]);
 
-// 🔍 VIEW BATCH FROM BLOCKCHAIN
+// VIEW
 async function fetchBatch(){
 
 const provider = new ethers.BrowserProvider(window.ethereum);
@@ -31,7 +35,7 @@ setViewBatch(result);
 
 }
 
-// 🔄 TRANSFER OWNERSHIP (CORE LOGIC + SAFETY)
+// 🔄 TRANSFER (ONLY ADDITION DONE HERE)
 async function transfer(){
 
 const signer=await connectWallet();
@@ -39,7 +43,17 @@ const address = await signer.getAddress();
 
 const contract=await getContract(signer);
 
-// 🔥 check ownership (IMPORTANT FIX)
+// 🔥 NEW CHECK: BLOCK IF REJECTED
+const localBatch = batches.find(
+  b => String(b.batchId) === String(batchId)
+);
+
+if(localBatch && localBatch.status === "Rejected"){
+  alert("This batch is rejected. Transfer not allowed.");
+  return;
+}
+
+// EXISTING LOGIC (UNCHANGED)
 const batch = await contract.getBatch(batchId);
 
 if(batch.currentOwner.toLowerCase() !== address.toLowerCase()){
@@ -47,10 +61,8 @@ if(batch.currentOwner.toLowerCase() !== address.toLowerCase()){
   return;
 }
 
-// ORIGINAL LOGIC
 await contract.transferOwnership(batchId,owner);
 
-// UPDATE LOCAL STORAGE (FOR SUPPLY CHAIN)
 updateBatchHistory(batchId, owner);
 
 setBatches(getBatches());
@@ -59,12 +71,47 @@ alert("Ownership transferred");
 
 }
 
+// REJECT FUNCTION
+function handleReject(id){
+
+const reason = rejectReasons[id];
+const proof = proofFiles[id];
+
+if(!reason){
+  alert("Enter rejection reason");
+  return;
+}
+
+if(!proof){
+  alert("Attach proof file");
+  return;
+}
+
+rejectBatch(id, {
+  reason: reason,
+  proof: proof
+});
+
+setRejectReasons({
+  ...rejectReasons,
+  [id]: ""
+});
+
+setProofFiles({
+  ...proofFiles,
+  [id]: null
+});
+
+setBatches(getBatches());
+
+}
+
 return(
 
 <div className="distributor-page">
   <div className="distributor-grid">
 
-{/* TRANSFER OWNERSHIP */}
+{/* TRANSFER */}
 <div className="distributor-card">
 
 <h2>Transfer Ownership</h2>
@@ -83,7 +130,7 @@ Transfer Ownership
 
 </div>
 
-{/* VIEW BATCH DETAILS */}
+{/* VIEW */}
 <div className="distributor-card">
 
 <h3>View Batch Details</h3>
@@ -111,7 +158,7 @@ Fetch Details
 
 </div>
 
-{/* RECEIVED BATCHES */}
+{/* BATCHES */}
 <div className="distributor-card">
 
 <h3>Available Batches (Local)</h3>
@@ -125,6 +172,58 @@ Fetch Details
 <p>Medicine: {b.medicine}</p>
 <p>Owner: {b.owner}</p>
 
+{/* IF REJECTED */}
+{b.status === "Rejected" ? (
+  <div style={{marginTop:"10px"}}>
+    <button disabled style={{background:"gray"}}>
+      Rejected
+    </button>
+    <p style={{color:"green"}}>
+      Rejection message sent to manufacturer
+    </p>
+  </div>
+) : (
+
+  <div style={{marginTop:"10px"}}>
+
+    <input
+      type="text"
+      placeholder="Reason for rejection"
+      value={rejectReasons[b.batchId] || ""}
+      onChange={(e)=>setRejectReasons({
+        ...rejectReasons,
+        [b.batchId]: e.target.value
+      })}
+    />
+
+    <input
+      type="file"
+      accept="image/*"
+      onChange={(e)=>{
+        const file = e.target.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = (event)=>{
+          setProofFiles({
+            ...proofFiles,
+            [b.batchId]: event.target.result
+          });
+        };
+
+        reader.readAsDataURL(file);
+      }}
+    />
+
+    <button onClick={()=>handleReject(b.batchId)}>
+      Reject Batch
+    </button>
+
+  </div>
+
+)}
+
 </div>
 ))}
 
@@ -132,5 +231,6 @@ Fetch Details
 
 </div>
 </div>
+
 )
 }

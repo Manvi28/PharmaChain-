@@ -44,3 +44,25 @@ batches = batches.map(b=>{
 localStorage.setItem("batches", JSON.stringify(batches));
 
 }
+export function rejectBatch(batchId, data){
+
+  let batches = getBatches();
+
+  const updatedBatches = batches.map(b => {
+
+    // ✅ STRICT MATCH (IMPORTANT)
+    if (String(b.batchId) === String(batchId)) {
+      return {
+        ...b,
+        status: "Rejected",
+        rejectionReason: data.reason,
+        proof: data.proof
+      };
+    }
+
+    // ✅ RETURN ORIGINAL (DON'T TOUCH OTHERS)
+    return { ...b };
+  });
+
+  localStorage.setItem("batches", JSON.stringify(updatedBatches));
+}
