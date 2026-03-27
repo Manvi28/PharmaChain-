@@ -35,6 +35,14 @@ export default function Verify(){
       const batches = getBatches();
       const localBatch = batches.find(b => b.batchId === id);
 
+      // 🔥 CHECK RECALL FIRST (MOST IMPORTANT)
+      if(Number(result.status) === 4){
+        setStatus("recalled");
+        setTrustScore(0);
+        setHistory(localBatch ? localBatch.history : []);
+        return;
+      }
+
       if(localBatch){
 
         setHistory(localBatch.history);
@@ -107,118 +115,122 @@ export default function Verify(){
     <div className="verify-page">
       <div className="verify-card">
 
-        <div className="card">
+        <h2>Verify Medicine</h2>
 
-          <h2>Verify Medicine</h2>
+        {/* QR SCANNER */}
+        <div id="reader"></div>
 
-          {/* QR SCANNER */}
-          <div id="reader"></div>
+        {/* INPUT */}
+        <input
+          placeholder="Enter Batch ID manually"
+          value={batchId}
+          onChange={(e)=>setBatchId(e.target.value)}
+        />
 
-          {/* MANUAL INPUT */}
-          <input
-            placeholder="Enter Batch ID manually"
-            value={batchId}
-            onChange={(e)=>setBatchId(e.target.value)}
-          />
+        <button onClick={()=>fetchBatch(batchId)}>
+          Verify
+        </button>
 
-          <button onClick={()=>fetchBatch(batchId)}>
-            Verify
-          </button>
+        {error && (
+          <p className="error-text">{error}</p>
+        )}
 
-          {error && (
-            <p style={{color:"red"}}>{error}</p>
-          )}
+        {batchId && (
+          <p><b>Batch ID:</b> {batchId}</p>
+        )}
 
-          {batchId && (
-            <p><b>Batch ID:</b> {batchId}</p>
-          )}
+        {/* 🚨 RECALL ALERT (TOP PRIORITY) */}
+        {status === "recalled" && (
+          <div className="status-box status-error">
+            🚨 RECALL ALERT 🚨 <br/>
+            This medicine is unsafe. DO NOT USE.
+          </div>
+        )}
 
-          {/* BLOCKCHAIN DETAILS */}
-          {data && (
+        {/* DETAILS */}
+        {data && status !== "recalled" && (
 
-            <div className="section">
+          <div className="section">
 
-              <h3>Medicine Details</h3>
+            <h3>Medicine Details</h3>
 
-              <p><b>Name:</b> {data.medicineName}</p>
-              <p><b>Location:</b> {data.location}</p>
+            <p><b>Name:</b> {data.medicineName}</p>
+            <p><b>Location:</b> {data.location}</p>
 
-              <p><b>Expiry:</b> {
-                new Date(Number(data.expiryDate) * 1000).toLocaleDateString()
-              }</p>
+            <p><b>Expiry:</b> {
+              new Date(Number(data.expiryDate) * 1000).toLocaleDateString()
+            }</p>
 
-              <p><b>Current Owner:</b> {
-                `${data.currentOwner.slice(0,6)}...${data.currentOwner.slice(-4)}`
-              }</p>
+            <p><b>Current Owner:</b> {
+              `${data.currentOwner.slice(0,6)}...${data.currentOwner.slice(-4)}`
+            }</p>
 
-            </div>
+          </div>
 
-          )}
+        )}
 
-          {/* SUPPLY CHAIN */}
-          {history.length > 0 && (
+        {/* SUPPLY CHAIN */}
+        {history.length > 0 && status !== "recalled" && (
 
-            <div className="section">
+          <div className="section">
 
-              <h3>Supply Chain</h3>
+            <h3>Supply Chain</h3>
 
-              {history.map((h,i)=>(
-                <div key={i} className="chain-step">
-                  {h.step} → {h.owner.slice(0,6)}...{h.owner.slice(-4)}
-                </div>
-              ))}
-
-            </div>
-
-          )}
-
-          {/* TRUST SCORE */}
-          {trustScore > 0 && (
-
-            <div className="section">
-
-              <h3>Trust Score</h3>
-
-              <div className="trust-score">
-                <div className="trust-value">{trustScore}/100</div>
+            {history.map((h,i)=>(
+              <div key={i} className="chain-step">
+                {h.step} → {h.owner.slice(0,6)}...{h.owner.slice(-4)}
               </div>
+            ))}
 
+          </div>
+
+        )}
+
+        {/* TRUST SCORE */}
+        {trustScore > 0 && status !== "recalled" && (
+
+          <div className="section">
+
+            <h3>Trust Score</h3>
+
+            <div className="trust-score">
+              <div className="trust-value">{trustScore}/100</div>
             </div>
 
-          )}
+          </div>
 
-          {/* STATUS */}
-          {status && (
+        )}
 
-            <div style={{marginTop:"20px"}}>
+        {/* STATUS */}
+        {status && status !== "recalled" && (
 
-              <h3>Verification Result</h3>
+          <div className="section">
 
-              <div className={`status-box 
-                ${status==="authentic"?"status-auth":""}
-                ${status==="suspicious"?"status-suspicious":""}
-                ${status==="expired"?"status-expired":""}
-                ${status==="not_found"?"status-error":""}
-              `}>
-                {status==="authentic" && "✔ AUTHENTIC MEDICINE"}
-                {status==="suspicious" && "⚠ SUSPICIOUS PRODUCT"}
-                {status==="expired" && "❌ EXPIRED MEDICINE"}
-                {status==="not_found" && "❌ NO RECORD FOUND"}
-              </div>
+            <h3>Verification Result</h3>
 
+            <div className={`status-box 
+              ${status==="authentic"?"status-auth":""}
+              ${status==="suspicious"?"status-suspicious":""}
+              ${status==="expired"?"status-expired":""}
+              ${status==="not_found"?"status-error":""}
+            `}>
+              {status==="authentic" && "✔ AUTHENTIC MEDICINE"}
+              {status==="suspicious" && "⚠ SUSPICIOUS PRODUCT"}
+              {status==="expired" && "❌ EXPIRED MEDICINE"}
+              {status==="not_found" && "❌ NO RECORD FOUND"}
             </div>
 
-          )}
+          </div>
 
-          {/* ⭐ REVIEW SECTION (FIXED) */}
-          {batchId && (
-            <div className="section">
-              <h3>User Reviews</h3>
-              <ReviewSection batchId={batchId} />
-            </div>
-          )}
+        )}
 
-        </div>
+        {/* REVIEWS */}
+        {batchId && (
+          <div className="section">
+            <h3>User Reviews</h3>
+            <ReviewSection batchId={batchId} />
+          </div>
+        )}
 
       </div>
     </div>

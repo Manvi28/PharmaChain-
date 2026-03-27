@@ -13,7 +13,7 @@ export default function Manufacturer(){
   const [expiry,setExpiry]=useState("");
   const [location,setLocation]=useState("");
   const [qr,setQr]=useState("");
-
+  const [recallId, setRecallId] = useState("");
   const [batches,setBatches]=useState([]);
   const [transferId,setTransferId]=useState("");
   const [distributor,setDistributor]=useState("");
@@ -36,6 +36,27 @@ export default function Manufacturer(){
 
     setBatches(getBatches());
   },[]);
+
+  async function recallBatch(){
+
+  if(!recallId){
+    alert("Enter Batch ID");
+    return;
+  }
+
+  try{
+    const signer = await connectWallet();
+    const contract = await getContract(signer);
+
+    await contract.recallBatch(recallId);
+
+    alert("Batch Recalled Successfully");
+
+  }catch(err){
+    console.log(err);
+    alert("Recall failed");
+  }
+}
 
   async function createBatch(){
 
@@ -192,7 +213,20 @@ if(existing){
           <button onClick={transferOwnership}>Transfer</button>
 
         </div>
+         <div className="manufacturer-card">
 
+  <h3>Recall Batch</h3>
+
+  <input
+    placeholder="Batch ID"
+    onChange={e=>setRecallId(e.target.value)}
+  />
+
+  <button onClick={recallBatch}>
+    Recall Batch
+  </button>
+
+</div>
         {/* BATCH LIST */}
         <div className="manufacturer-card">
 
