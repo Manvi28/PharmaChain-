@@ -66,3 +66,16 @@ export function rejectBatch(batchId, data){
 
   localStorage.setItem("batches", JSON.stringify(updatedBatches));
 }
+export function updateBatchStatusLocal(batchId, status){
+
+  const batches = JSON.parse(localStorage.getItem("batches")) || [];
+
+  const updated = batches.map(b => {
+    if(b.batchId === batchId){
+      return { ...b, status };
+    }
+    return b;
+  });
+
+  localStorage.setItem("batches", JSON.stringify(updated));
+}

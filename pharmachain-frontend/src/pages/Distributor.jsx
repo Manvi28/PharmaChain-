@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { connectWallet } from "../utils/web3";
 import { getContract } from "../utils/contract";
-import { getBatches, updateBatchHistory, rejectBatch } from "../utils/batchStorage";
+import { getBatches, updateBatchHistory, rejectBatch, updateBatchStatusLocal } from "../utils/batchStorage";
 import { ethers } from "ethers";
 import "../styles/distributor.css";
 
@@ -35,7 +35,7 @@ setViewBatch(result);
 
 }
 
-// 🔄 TRANSFER (ONLY ADDITION DONE HERE)
+// 🔄 TRANSFER (UNCHANGED + REJECT CHECK)
 async function transfer(){
 
 const signer=await connectWallet();
@@ -43,7 +43,7 @@ const address = await signer.getAddress();
 
 const contract=await getContract(signer);
 
-// 🔥 NEW CHECK: BLOCK IF REJECTED
+// 🔥 BLOCK IF REJECTED
 const localBatch = batches.find(
   b => String(b.batchId) === String(batchId)
 );
@@ -53,7 +53,7 @@ if(localBatch && localBatch.status === "Rejected"){
   return;
 }
 
-// EXISTING LOGIC (UNCHANGED)
+// EXISTING LOGIC
 const batch = await contract.getBatch(batchId);
 
 if(batch.currentOwner.toLowerCase() !== address.toLowerCase()){
@@ -71,7 +71,7 @@ alert("Ownership transferred");
 
 }
 
-// REJECT FUNCTION
+// ❌ REJECT
 function handleReject(id){
 
 const reason = rejectReasons[id];
@@ -104,6 +104,16 @@ setProofFiles({
 
 setBatches(getBatches());
 
+}
+
+// ✅ ACCEPT (NEW)
+function handleAccept(id){
+
+  updateBatchStatusLocal(id, "accepted");
+
+  alert("Batch accepted successfully");
+
+  setBatches(getBatches());
 }
 
 return(
@@ -172,8 +182,20 @@ Fetch Details
 <p>Medicine: {b.medicine}</p>
 <p>Owner: {b.owner}</p>
 
-{/* IF REJECTED */}
+{/* 🔥 STATUS DISPLAY */}
+<p>
+Status: {
+  b.status === "damaged" ? "❌ Damaged" :
+  b.status === "sold" ? "✔ Sold" :
+  b.status === "Rejected" ? "❌ Rejected" :
+  b.status === "accepted" ? "✔ Accepted" :
+  "In Transit"
+}
+</p>
+
+{/* LOGIC BLOCK */}
 {b.status === "Rejected" ? (
+
   <div style={{marginTop:"10px"}}>
     <button disabled style={{background:"gray"}}>
       Rejected
@@ -182,10 +204,42 @@ Fetch Details
       Rejection message sent to manufacturer
     </p>
   </div>
+
+) : b.status === "accepted" ? (
+
+  <div style={{marginTop:"10px"}}>
+    <button disabled style={{background:"green"}}>
+      Accepted
+    </button>
+    <p style={{color:"green"}}>
+      ✔ Batch received successfully
+    </p>
+  </div>
+
+) : b.status === "sold" || b.status === "damaged" ? (
+
+  <div style={{marginTop:"10px"}}>
+    <button disabled style={{background:"gray"}}>
+      Final State
+    </button>
+    <p>
+      {b.status === "sold" ? "✔ Already Sold" : "❌ Damaged"}
+    </p>
+  </div>
+
 ) : (
 
   <div style={{marginTop:"10px"}}>
 
+    {/* ✅ ACCEPT BUTTON */}
+    <button 
+      style={{background:"green", marginBottom:"8px"}}
+      onClick={()=>handleAccept(b.batchId)}
+    >
+      Accept Batch
+    </button>
+
+    {/* ❌ REJECT FLOW */}
     <input
       type="text"
       placeholder="Reason for rejection"

@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import abi from "../abi.json";
 
 const contractAddress =
-  "0x7be6A27f85EABfC953C1141263fB682868d923cc";
+  "0x9814eeA9bD681b57D8743168F2E95D74AF0C92cD";
 
 export async function getContract(signerOrProvider) {
 

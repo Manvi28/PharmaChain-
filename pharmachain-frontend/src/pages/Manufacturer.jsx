@@ -18,7 +18,6 @@ export default function Manufacturer(){
   const [transferId,setTransferId]=useState("");
   const [distributor,setDistributor]=useState("");
   const [selectedDistributor,setSelectedDistributor]=useState("");
-
   const [address,setAddress]=useState("");
 
   const distributors = [
@@ -26,6 +25,7 @@ export default function Manufacturer(){
     { name: "MedPlus Distributor", address: "0x456..." }
   ];
 
+  // 🔥 LOAD + AUTO REFRESH
   useEffect(()=>{
     async function load(){
       const signer = await connectWallet();
@@ -35,28 +35,36 @@ export default function Manufacturer(){
     load();
 
     setBatches(getBatches());
+
+    // ✅ AUTO SYNC (IMPORTANT)
+    const interval = setInterval(()=>{
+      setBatches(getBatches());
+    },2000);
+
+    return () => clearInterval(interval);
+
   },[]);
 
   async function recallBatch(){
 
-  if(!recallId){
-    alert("Enter Batch ID");
-    return;
+    if(!recallId){
+      alert("Enter Batch ID");
+      return;
+    }
+
+    try{
+      const signer = await connectWallet();
+      const contract = await getContract(signer);
+
+      await contract.recallBatch(recallId);
+
+      alert("Batch Recalled Successfully");
+
+    }catch(err){
+      console.log(err);
+      alert("Recall failed");
+    }
   }
-
-  try{
-    const signer = await connectWallet();
-    const contract = await getContract(signer);
-
-    await contract.recallBatch(recallId);
-
-    alert("Batch Recalled Successfully");
-
-  }catch(err){
-    console.log(err);
-    alert("Recall failed");
-  }
-}
 
   async function createBatch(){
 
@@ -69,14 +77,16 @@ export default function Manufacturer(){
       const signer = await connectWallet();
       const addr = await signer.getAddress();
       const contract = await getContract(signer);
-      const existing = getBatches().find(
-  b => String(b.batchId) === String(batchId)
-);
 
-if(existing){
-  alert("Batch ID already exists");
-  return;
-}
+      const existing = getBatches().find(
+        b => String(b.batchId) === String(batchId)
+      );
+
+      if(existing){
+        alert("Batch ID already exists");
+        return;
+      }
+
       await contract.createBatch(batchId, medicine, expiry, location);
 
       saveBatch({
@@ -157,7 +167,7 @@ if(existing){
     <div className="manufacturer-page">
       <div className="manufacturer-grid">
 
-        {/* CREATE BATCH */}
+        {/* CREATE */}
         <div className="manufacturer-card">
 
           <h2>Create Drug Batch</h2>
@@ -213,35 +223,57 @@ if(existing){
           <button onClick={transferOwnership}>Transfer</button>
 
         </div>
-         <div className="manufacturer-card">
 
-  <h3>Recall Batch</h3>
+        {/* RECALL */}
+        <div className="manufacturer-card">
 
-  <input
-    placeholder="Batch ID"
-    onChange={e=>setRecallId(e.target.value)}
-  />
+          <h3>Recall Batch</h3>
 
-  <button onClick={recallBatch}>
-    Recall Batch
-  </button>
+          <input
+            placeholder="Batch ID"
+            onChange={e=>setRecallId(e.target.value)}
+          />
 
-</div>
-        {/* BATCH LIST */}
+          <button onClick={recallBatch}>
+            Recall Batch
+          </button>
+
+        </div>
+
+        {/* LIST */}
         <div className="manufacturer-card">
 
           <h3>Your Batches</h3>
 
           {batches.map(b=>(
 
-            <div key={b.batchId} className="batch-item">
+            <div 
+              key={b.batchId} 
+              className={`batch-item 
+                ${b.status === "damaged" ? "batch-damaged" : ""}
+                ${b.status === "sold" ? "batch-sold" : ""}
+                ${b.status === "accepted" ? "batch-accepted" : ""}
+              `}
+            >
 
               <p><b>{b.batchId}</b></p>
               <p>{b.medicine}</p>
               <p>{b.location}</p>
-              <p>Status: {b.owner === address ? "Owned" : "Transferred"}</p>
 
-              {/* ✅ REJECTION DISPLAY */}
+              {/* ✅ FINAL STATUS */}
+              <p>
+                Status: {
+                  b.status === "damaged" ? "❌ Damaged" :
+                  b.status === "sold" ? "✔ Sold" :
+                  b.status === "accepted" ? "✔ Accepted by Distributor" :
+                  b.status === "Rejected" ? "❌ Rejected" :
+                  b.status === "recalled" ? "🚨 Recalled" :
+                  b.owner === address ? "Owned" :
+                  "Transferred"
+                }
+              </p>
+
+              {/* REJECTION */}
               {b.status === "Rejected" && (
                 <div style={{
                   marginTop: "10px",
@@ -258,7 +290,6 @@ if(existing){
 
                   <p><b>Proof:</b></p>
 
-                  {/* ✅ SAFE IMAGE DISPLAY */}
                   {b.proof ? (
                     b.proof.startsWith("data:image") ? (
                       <img

@@ -35,7 +35,9 @@ export default function Verify(){
       const batches = getBatches();
       const localBatch = batches.find(b => b.batchId === id);
 
-      // 🔥 CHECK RECALL FIRST (MOST IMPORTANT)
+      // 🔥 PRIORITY LOGIC (VERY IMPORTANT)
+
+      // 1️⃣ RECALL
       if(Number(result.status) === 4){
         setStatus("recalled");
         setTrustScore(0);
@@ -43,6 +45,23 @@ export default function Verify(){
         return;
       }
 
+      // 2️⃣ DAMAGED
+      if(Number(result.status) === 5){
+        setStatus("damaged");
+        setTrustScore(0);
+        setHistory([]);
+        return;
+      }
+
+      // 3️⃣ SOLD
+      if(Number(result.status) === 3){
+        setStatus("sold");
+        setTrustScore(100);
+        setHistory([]);
+        return;
+      }
+
+      // 4️⃣ NORMAL FLOW
       if(localBatch){
 
         setHistory(localBatch.history);
@@ -139,7 +158,7 @@ export default function Verify(){
           <p><b>Batch ID:</b> {batchId}</p>
         )}
 
-        {/* 🚨 RECALL ALERT (TOP PRIORITY) */}
+        {/* 🚨 RECALL ALERT */}
         {status === "recalled" && (
           <div className="status-box status-error">
             🚨 RECALL ALERT 🚨 <br/>
@@ -201,23 +220,29 @@ export default function Verify(){
 
         )}
 
-        {/* STATUS */}
+        {/* FINAL STATUS */}
         {status && status !== "recalled" && (
 
           <div className="section">
 
             <h3>Verification Result</h3>
 
-            <div className={`status-box 
+            <div className={`status-box
               ${status==="authentic"?"status-auth":""}
               ${status==="suspicious"?"status-suspicious":""}
               ${status==="expired"?"status-expired":""}
               ${status==="not_found"?"status-error":""}
+              ${status==="damaged"?"status-error":""}
+              ${status==="sold"?"status-auth":""}
             `}>
+
               {status==="authentic" && "✔ AUTHENTIC MEDICINE"}
               {status==="suspicious" && "⚠ SUSPICIOUS PRODUCT"}
               {status==="expired" && "❌ EXPIRED MEDICINE"}
               {status==="not_found" && "❌ NO RECORD FOUND"}
+              {status==="sold" && "✔ SOLD (Product lifecycle completed)"}
+              {status==="damaged" && "❌ DAMAGED / TAMPERED PRODUCT"}
+
             </div>
 
           </div>
