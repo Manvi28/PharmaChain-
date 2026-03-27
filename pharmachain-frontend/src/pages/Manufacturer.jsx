@@ -4,6 +4,7 @@ import { getContract } from "../utils/contract";
 import { QRCodeCanvas } from "qrcode.react";
 import "../styles/manufacturer.css";
 import { saveBatch, getBatches, updateBatchHistory } from "../utils/batchStorage";
+import ReviewSection from "../components/ReviewSection";
 
 export default function Manufacturer(){
 
@@ -16,10 +17,15 @@ export default function Manufacturer(){
   const [batches,setBatches]=useState([]);
   const [transferId,setTransferId]=useState("");
   const [distributor,setDistributor]=useState("");
+  const [selectedDistributor,setSelectedDistributor]=useState("");
 
   const [address,setAddress]=useState("");
 
-  // 🔐 GET WALLET ADDRESS
+  const distributors = [
+    { name: "Apollo Distributor", address: "0x123..." },
+    { name: "MedPlus Distributor", address: "0x456..." }
+  ];
+
   useEffect(()=>{
     async function load(){
       const signer = await connectWallet();
@@ -31,7 +37,6 @@ export default function Manufacturer(){
     setBatches(getBatches());
   },[]);
 
-  // ✅ CREATE BATCH
   async function createBatch(){
 
     if(!batchId || !medicine || !expiry || !location){
@@ -42,17 +47,10 @@ export default function Manufacturer(){
     try{
       const signer = await connectWallet();
       const addr = await signer.getAddress();
-
       const contract = await getContract(signer);
 
-      await contract.createBatch(
-        batchId,
-        medicine,
-        expiry,
-        location
-      );
+      await contract.createBatch(batchId, medicine, expiry, location);
 
-      // SAVE LOCALLY
       saveBatch({
         batchId,
         medicine,
@@ -60,16 +58,12 @@ export default function Manufacturer(){
         location,
         owner: addr,
         history: [
-          {
-            step: "Manufactured",
-            owner: addr
-          }
+          { step: "Manufactured", owner: addr }
         ]
       });
 
       setBatches(getBatches());
 
-      // ✅ FIXED QR LINK
       const link = `${window.location.origin}/verify?batchId=${batchId}`;
       setQr(link);
 
@@ -81,22 +75,28 @@ export default function Manufacturer(){
     }
   }
 
-  // ✅ TRANSFER OWNERSHIP
   async function transferOwnership(){
 
-    if(!transferId || !distributor){
-      alert("Enter batch ID and distributor address");
+    const finalDistributor = selectedDistributor || distributor;
+
+    if(!transferId || !finalDistributor){
+      alert("Enter batch ID and select distributor");
       return;
     }
+
+    const confirm = window.confirm(
+      `Transfer batch ${transferId} to ${finalDistributor}?`
+    );
+
+    if(!confirm) return;
 
     try{
       const signer = await connectWallet();
       const contract = await getContract(signer);
 
-      await contract.transferOwnership(transferId, distributor);
+      await contract.transferOwnership(transferId, finalDistributor);
 
-      // UPDATE LOCAL STORAGE
-      updateBatchHistory(transferId, distributor);
+      updateBatchHistory(transferId, finalDistributor);
 
       setBatches(getBatches());
 
@@ -107,122 +107,107 @@ export default function Manufacturer(){
       alert("Transfer failed");
     }
   }
+
   function downloadQR(){
-  const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector(".qr-section canvas");
 
-  if(!canvas){
-    alert("QR not generated yet");
-    return;
+    if(!canvas){
+      alert("QR not generated yet");
+      return;
+    }
+
+    const url = canvas.toDataURL("image/png");
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `batch-${batchId}.png`;
+    link.click();
   }
-
-  const url = canvas.toDataURL("image/png");
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "pharmachain-qr.png";
-  link.click();
-}
 
   return(
 
-   <div className="manufacturer-page">
-  <div className="manufacturer-grid">
+    <div className="manufacturer-page">
+      <div className="manufacturer-grid">
 
-      {/* CREATE BATCH */}
-      <div className="manufacturer-card">
+        {/* CREATE BATCH */}
+        <div className="manufacturer-card">
 
-        <h2>Create Drug Batch</h2>
+          <h2>Create Drug Batch</h2>
 
-        <input
-          placeholder="Batch ID"
-          onChange={e=>setBatchId(e.target.value)}
-        />
+          <input placeholder="Batch ID" onChange={e=>setBatchId(e.target.value)} />
+          <input placeholder="Medicine Name" onChange={e=>setMedicine(e.target.value)} />
 
-        <input
-          placeholder="Medicine Name"
-          onChange={e=>setMedicine(e.target.value)}
-        />
+          <input
+            type="date"
+            onChange={e=>{
+              const timestamp = Math.floor(new Date(e.target.value).getTime()/1000);
+              setExpiry(timestamp);
+            }}
+          />
 
-        {/* ✅ DATE INPUT FIX */}
-        <input
-          type="date"
-          onChange={e=>{
-            const timestamp = Math.floor(new Date(e.target.value).getTime()/1000);
-            setExpiry(timestamp);
-          }}
-        />
+          <input placeholder="Location" onChange={e=>setLocation(e.target.value)} />
 
-        <input
-          placeholder="Manufacturing Location"
-          onChange={e=>setLocation(e.target.value)}
-        />
+          <button onClick={createBatch}>Create Batch</button>
 
-        <button onClick={createBatch}>
-          Create Batch
-        </button>
-       <div className="qr-section">
-        {qr &&(
-          <div style={{marginTop:"20px"}}>
-            <h3>QR Code</h3>
-            <QRCodeCanvas value={qr} size={200}/>
-            <p style={{fontSize:"12px"}}>{qr}</p>
-            <button onClick={downloadQR}>Download QR</button>
-          </div>
-        )}
-     </div>
-      </div>
-
-      {/* TRANSFER */}
-      <div className="manufacturer-card">
-
-        <h3>Transfer to Distributor</h3>
-
-        <input
-          placeholder="Batch ID"
-          onChange={e=>setTransferId(e.target.value)}
-        />
-
-        <input
-          placeholder="Distributor Wallet Address"
-          onChange={e=>setDistributor(e.target.value)}
-        />
-
-        <button onClick={transferOwnership}>
-          Transfer Ownership
-        </button>
-
-      </div>
-
-      {/* VIEW BATCHES */}
-      <div className="manufacturer-card">
-
-        <h3>Your Batches</h3>
-
-        {batches.length === 0 && <p>No batches created yet</p>}
-
-        {batches.map(b=>(
-
-          <div key={b.batchId} className="batch-item">
-
-            <p><b>{b.batchId}</b></p>
-            <p>Medicine: {b.medicine}</p>
-            <p>Location: {b.location}</p>
-            <p>Owner: {b.owner}</p>
-
-            <p>
-              Status: {b.owner === address 
-                ? "You own this batch" 
-                : "Transferred"}
-            </p>
-
+          <div className="qr-section">
+            {qr && (
+              <div>
+                <QRCodeCanvas value={qr} size={200}/>
+                <button onClick={downloadQR}>Download QR</button>
+              </div>
+            )}
           </div>
 
-        ))}
+        </div>
+
+        {/* TRANSFER */}
+        <div className="manufacturer-card">
+
+          <h3>Transfer Ownership</h3>
+
+          <input placeholder="Batch ID" onChange={e=>setTransferId(e.target.value)} />
+
+          <select
+            value={selectedDistributor}
+            onChange={(e)=>setSelectedDistributor(e.target.value)}
+          >
+            <option value="">Select Distributor</option>
+            {distributors.map((d,i)=>(
+              <option key={i} value={d.address}>{d.name}</option>
+            ))}
+          </select>
+
+          <input
+            placeholder="Or Enter Wallet Address"
+            onChange={e=>setDistributor(e.target.value)}
+          />
+
+          <button onClick={transferOwnership}>Transfer</button>
+
+        </div>
+
+        {/* BATCH LIST + VIEW ONLY REVIEWS */}
+        <div className="manufacturer-card">
+
+          <h3>Your Batches</h3>
+
+          {batches.map(b=>(
+            <div key={b.batchId} className="batch-item">
+
+              <p><b>{b.batchId}</b></p>
+              <p>{b.medicine}</p>
+              <p>{b.location}</p>
+              <p>Status: {b.owner === address ? "Owned" : "Transferred"}</p>
+
+              {/* VIEW ONLY */}
+              <ReviewSection batchId={b.batchId} readOnly={true} />
+
+            </div>
+          ))}
+
+        </div>
 
       </div>
-
     </div>
-</div>
-
   )
 }
