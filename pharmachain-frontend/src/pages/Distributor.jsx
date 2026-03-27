@@ -3,6 +3,7 @@ import { connectWallet } from "../utils/web3";
 import { getContract } from "../utils/contract";
 import { getBatches, updateBatchHistory } from "../utils/batchStorage";
 import { ethers } from "ethers";
+import "../styles/distributor.css";
 
 export default function Distributor(){
 
@@ -60,10 +61,11 @@ alert("Ownership transferred");
 
 return(
 
-<div className="container">
+<div className="distributor-page">
+  <div className="distributor-grid">
 
 {/* TRANSFER OWNERSHIP */}
-<div className="card">
+<div className="distributor-card">
 
 <h2>Transfer Ownership</h2>
 
@@ -82,7 +84,7 @@ Transfer Ownership
 </div>
 
 {/* VIEW BATCH DETAILS */}
-<div className="card">
+<div className="distributor-card">
 
 <h3>View Batch Details</h3>
 
@@ -96,7 +98,7 @@ Fetch Details
 
 {viewBatch && (
 
-<div style={{marginTop:"15px"}}>
+<div className="view-result">
 
 <p><b>Medicine:</b> {viewBatch.medicineName}</p>
 <p><b>Location:</b> {viewBatch.location}</p>
@@ -110,14 +112,14 @@ Fetch Details
 </div>
 
 {/* RECEIVED BATCHES */}
-<div className="card">
+<div className="distributor-card">
 
 <h3>Available Batches (Local)</h3>
 
 {batches.length === 0 && <p>No batches found</p>}
 
 {batches.map(b=>(
-<div key={b.batchId} style={{borderBottom:"1px solid #ddd",padding:"10px"}}>
+<div key={b.batchId} className="batch-item">
 
 <p><b>{b.batchId}</b></p>
 <p>Medicine: {b.medicine}</p>
@@ -129,6 +131,6 @@ Fetch Details
 </div>
 
 </div>
-
+</div>
 )
 }

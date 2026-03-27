@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { connectWallet } from "../utils/web3";
 import { getContract } from "../utils/contract";
 import { QRCodeCanvas } from "qrcode.react";
-
+import "../styles/manufacturer.css";
 import { saveBatch, getBatches, updateBatchHistory } from "../utils/batchStorage";
 
 export default function Manufacturer(){
@@ -107,13 +107,29 @@ export default function Manufacturer(){
       alert("Transfer failed");
     }
   }
+  function downloadQR(){
+  const canvas = document.querySelector("canvas");
+
+  if(!canvas){
+    alert("QR not generated yet");
+    return;
+  }
+
+  const url = canvas.toDataURL("image/png");
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "pharmachain-qr.png";
+  link.click();
+}
 
   return(
 
-    <div className="container">
+   <div className="manufacturer-page">
+  <div className="manufacturer-grid">
 
       {/* CREATE BATCH */}
-      <div className="card">
+      <div className="manufacturer-card">
 
         <h2>Create Drug Batch</h2>
 
@@ -144,19 +160,20 @@ export default function Manufacturer(){
         <button onClick={createBatch}>
           Create Batch
         </button>
-
+       <div className="qr-section">
         {qr &&(
           <div style={{marginTop:"20px"}}>
             <h3>QR Code</h3>
             <QRCodeCanvas value={qr} size={200}/>
             <p style={{fontSize:"12px"}}>{qr}</p>
+            <button onClick={downloadQR}>Download QR</button>
           </div>
         )}
-
+     </div>
       </div>
 
       {/* TRANSFER */}
-      <div className="card">
+      <div className="manufacturer-card">
 
         <h3>Transfer to Distributor</h3>
 
@@ -177,7 +194,7 @@ export default function Manufacturer(){
       </div>
 
       {/* VIEW BATCHES */}
-      <div className="card">
+      <div className="manufacturer-card">
 
         <h3>Your Batches</h3>
 
@@ -185,7 +202,7 @@ export default function Manufacturer(){
 
         {batches.map(b=>(
 
-          <div key={b.batchId} style={{borderBottom:"1px solid #ddd",padding:"10px"}}>
+          <div key={b.batchId} className="batch-item">
 
             <p><b>{b.batchId}</b></p>
             <p>Medicine: {b.medicine}</p>
@@ -205,6 +222,7 @@ export default function Manufacturer(){
       </div>
 
     </div>
+</div>
 
   )
 }

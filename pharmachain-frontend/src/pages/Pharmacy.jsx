@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ethers } from "ethers";
 import { getContract } from "../utils/contract";
 import { getBatches } from "../utils/batchStorage";
+import "../styles/pharmacy.css";
 
 export default function Pharmacy(){
 
@@ -51,7 +52,8 @@ if(localBatch){
 
 return(
 
-<div className="container">
+<div className="pharmacy-page">
+  <div className="pharmacy-card">
 
 <div className="card">
 
@@ -68,7 +70,7 @@ Verify
 {/* BLOCKCHAIN DATA */}
 {data &&(
 
-<div style={{marginTop:"20px"}}>
+<div className="section">
 
 <h3>Batch Details</h3>
 
@@ -84,14 +86,14 @@ Verify
 {/* SUPPLY CHAIN HISTORY */}
 {history.length > 0 && (
 
-<div style={{marginTop:"20px"}}>
+<div className="section">
 
 <h3>Supply Chain</h3>
 
 {history.map((h,i)=>(
-<p key={i}>
+<div key={i} className="chain-step">
 {h.step} → {h.owner}
-</p>
+</div>
 ))}
 
 </div>
@@ -101,27 +103,21 @@ Verify
 {/* AUTHENTICITY STATUS */}
 {status && (
 
-<div style={{marginTop:"20px"}}>
+<div className="section">
 
 <h3>Status</h3>
 
-{status === "authentic" && (
-<p style={{color:"green"}}>
-✔ Authentic Medicine
-</p>
-)}
+<div className={`status-box 
+  ${status==="authentic"?"status-auth":""}
+  ${status==="suspicious"?"status-suspicious":""}
+  ${status==="not_found"?"status-error":""}
+`}>
 
-{status === "suspicious" && (
-<p style={{color:"orange"}}>
-⚠ Incomplete Supply Chain
-</p>
-)}
+  {status==="authentic" && "✔ Authentic Medicine"}
+  {status==="suspicious" && "⚠ Incomplete Supply Chain"}
+  {status==="not_found" && "❌ No Record Found"}
 
-{status === "not_found" && (
-<p style={{color:"red"}}>
-❌ No Record Found
-</p>
-)}
+</div>
 
 </div>
 
@@ -130,7 +126,7 @@ Verify
 </div>
 
 </div>
-
+</div>
 )
 
 }

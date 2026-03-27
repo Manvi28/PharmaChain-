@@ -28,7 +28,6 @@ if(user.status === "rejected"){
   return;
 }
 
-// redirect based on role
 if(user.role === "manufacturer") navigate("/manufacturer");
 if(user.role === "distributor") navigate("/distributor");
 if(user.role === "pharmacy") navigate("/pharmacy");
@@ -37,16 +36,25 @@ if(user.role === "pharmacy") navigate("/pharmacy");
 
 return(
 
-<div className="container">
-<div className="card">
+<div className="login-page">
 
-<h2>Login</h2>
+  <div className="glass-card">
 
-<button onClick={login}>
-Connect Wallet
-</button>
+    <h2>Welcome Back</h2>
+    <p className="subtitle">
+      Connect your wallet to access PharmaChain dashboard
+    </p>
 
-</div>
+    <button className="wallet-btn" onClick={login}>
+      🔐 Connect Wallet
+    </button>
+
+    <p className="helper-text">
+      New user? <span onClick={()=>navigate("/register")}>Register here</span>
+    </p>
+
+  </div>
+
 </div>
 
 )

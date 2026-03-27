@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { connectWallet } from "../utils/web3";
+import { connectWallet } from "../utils/web3"; 
 import { saveUser } from "../utils/auth";
-
 export default function Register() {
 
   const [role, setRole] = useState("manufacturer");
@@ -21,7 +20,6 @@ export default function Register() {
 
   async function register() {
 
-    // basic validation
     if (!formData.companyName || !formData.licenseNumber || !formData.location) {
       alert("Please fill all fields");
       return;
@@ -48,77 +46,72 @@ export default function Register() {
   }
 
   return (
-    <div className="container">
-      <div className="card">
+    <div className="register-page">
 
-        <h2>Register</h2>
+      <div className="glass-card">
 
-        {/* ROLE SELECT */}
-        <select value={role} onChange={e => setRole(e.target.value)}>
+        <h2>Register Your Organization</h2>
+        <p className="subtitle">Join the PharmaChain network securely</p>
+
+        {/* ROLE */}
+        <select
+          className="input"
+          value={role}
+          onChange={e => setRole(e.target.value)}
+        >
           <option value="manufacturer">Manufacturer</option>
           <option value="distributor">Distributor</option>
           <option value="pharmacy">Pharmacy</option>
         </select>
 
-        {/* ================== MANUFACTURER ================== */}
+        {/* MANUFACTURER */}
         {role === "manufacturer" && (
           <>
-            <input
-              placeholder="Company Name"
-              onChange={e => handleChange("companyName", e.target.value)}
-            />
-            <input
-              placeholder="Drug License Number"
-              onChange={e => handleChange("licenseNumber", e.target.value)}
-            />
-            <input
-              placeholder="Manufacturing Location"
-              onChange={e => handleChange("location", e.target.value)}
-            />
+            <input className="input" placeholder="Company Name"
+              onChange={e => handleChange("companyName", e.target.value)} />
+
+            <input className="input" placeholder="Drug License Number"
+              onChange={e => handleChange("licenseNumber", e.target.value)} />
+
+            <input className="input" placeholder="Manufacturing Location"
+              onChange={e => handleChange("location", e.target.value)} />
           </>
         )}
 
-        {/* ================== DISTRIBUTOR ================== */}
+        {/* DISTRIBUTOR */}
         {role === "distributor" && (
           <>
-            <input
-              placeholder="Company Name"
-              onChange={e => handleChange("companyName", e.target.value)}
-            />
-            <input
-              placeholder="Transport License / Business ID"
-              onChange={e => handleChange("licenseNumber", e.target.value)}
-            />
-            <input
-              placeholder="Operating Region (City/State)"
-              onChange={e => handleChange("location", e.target.value)}
-            />
+            <input className="input" placeholder="Company Name"
+              onChange={e => handleChange("companyName", e.target.value)} />
+
+            <input className="input" placeholder="Transport License / Business ID"
+              onChange={e => handleChange("licenseNumber", e.target.value)} />
+
+            <input className="input" placeholder="Operating Region"
+              onChange={e => handleChange("location", e.target.value)} />
           </>
         )}
 
-        {/* ================== PHARMACY ================== */}
+        {/* PHARMACY */}
         {role === "pharmacy" && (
           <>
-            <input
-              placeholder="Pharmacy Name"
-              onChange={e => handleChange("companyName", e.target.value)}
-            />
-            <input
-              placeholder="Pharmacy License Number"
-              onChange={e => handleChange("licenseNumber", e.target.value)}
-            />
-            <input
-              placeholder="Address"
-              onChange={e => handleChange("location", e.target.value)}
-            />
+            <input className="input" placeholder="Pharmacy Name"
+              onChange={e => handleChange("companyName", e.target.value)} />
+
+            <input className="input" placeholder="Pharmacy License Number"
+              onChange={e => handleChange("licenseNumber", e.target.value)} />
+
+            <input className="input" placeholder="Address"
+              onChange={e => handleChange("location", e.target.value)} />
           </>
         )}
 
-        <button onClick={register}>
-          Submit
+        <button className="submit-btn" onClick={register}>
+          Register & Connect Wallet
         </button>
 
       </div>
+
     </div>
   );
 }

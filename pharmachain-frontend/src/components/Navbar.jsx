@@ -4,21 +4,30 @@ export default function Navbar(){
 
 return(
 
-<div className="navbar">
+<nav className="navbar">
 
-<h2>PharmaChain</h2>
+{/* LOGO */}
+<div className="nav-left">
+  <Link to="/" className="logo">
+    PharmaChain
+  </Link>
+</div>
 
-<div>
+{/* MENU */}
+<div className="nav-right">
 
-<Link to="/">Home</Link>
-<Link to="/manufacturer">Manufacturer</Link>
-<Link to="/distributor">Distributor</Link>
-<Link to="/pharmacy">Pharmacy</Link>
-<Link to="/verify">Verify</Link>
+  <Link to="/" className="nav-link">Home</Link>
+  <Link to="/register" className="nav-link">Register</Link>
+  <Link to="/login" className="nav-link">Login</Link>
+
+  {/* CTA BUTTON */}
+  <Link to="/verify" className="nav-btn">
+    Verify Medicine
+  </Link>
 
 </div>
 
-</div>
+</nav>
 
 )
 

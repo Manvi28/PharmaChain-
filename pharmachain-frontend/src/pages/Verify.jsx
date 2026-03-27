@@ -3,6 +3,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { ethers } from "ethers";
 import { getContract } from "../utils/contract";
 import { getBatches } from "../utils/batchStorage";
+import "../styles/verify.css";
 
 export default function Verify(){
 
@@ -104,7 +105,8 @@ export default function Verify(){
 
   return(
 
-    <div className="container">
+    <div className="verify-page">
+  <div className="verify-card">
 
       <div className="card">
 
@@ -135,7 +137,7 @@ export default function Verify(){
         {/* BLOCKCHAIN DETAILS */}
         {data && (
 
-          <div style={{marginTop:"20px"}}>
+          <div className="section">
 
             <h3>Medicine Details</h3>
 
@@ -160,14 +162,14 @@ export default function Verify(){
         {/* SUPPLY CHAIN */}
         {history.length > 0 && (
 
-          <div style={{marginTop:"20px"}}>
+          <div className="section">
 
             <h3>Supply Chain</h3>
 
             {history.map((h,i)=>(
-              <p key={i}>
+              <div key={i} className="chain-step">
                 {h.step} → {h.owner.slice(0,6)}...{h.owner.slice(-4)}
-              </p>
+              </div>
             ))}
 
           </div>
@@ -177,16 +179,13 @@ export default function Verify(){
         {/* TRUST SCORE */}
         {trustScore > 0 && (
 
-          <div style={{marginTop:"20px"}}>
+          <div className="section">
 
             <h3>Trust Score</h3>
 
-            <p style={{
-              fontSize:"20px",
-              color: trustScore >= 80 ? "green" : "orange"
-            }}>
-              {trustScore}/100
-            </p>
+            <div className="trust-score">
+  <div className="trust-value">{trustScore}/100</div>
+</div>
 
           </div>
 
@@ -199,29 +198,17 @@ export default function Verify(){
 
             <h3>Verification Result</h3>
 
-            {status === "authentic" && (
-              <p style={{color:"green", fontWeight:"bold", fontSize:"18px"}}>
-                ✔ AUTHENTIC MEDICINE
-              </p>
-            )}
-
-            {status === "suspicious" && (
-              <p style={{color:"orange", fontWeight:"bold", fontSize:"18px"}}>
-                ⚠ SUSPICIOUS PRODUCT
-              </p>
-            )}
-
-            {status === "expired" && (
-              <p style={{color:"red", fontWeight:"bold", fontSize:"18px"}}>
-                ❌ EXPIRED MEDICINE
-              </p>
-            )}
-
-            {status === "not_found" && (
-              <p style={{color:"red", fontWeight:"bold", fontSize:"18px"}}>
-                ❌ NO RECORD FOUND
-              </p>
-            )}
+            <div className={`status-box 
+  ${status==="authentic"?"status-auth":""}
+  ${status==="suspicious"?"status-suspicious":""}
+  ${status==="expired"?"status-expired":""}
+  ${status==="not_found"?"status-error":""}
+`}>
+  {status==="authentic" && "✔ AUTHENTIC MEDICINE"}
+  {status==="suspicious" && "⚠ SUSPICIOUS PRODUCT"}
+  {status==="expired" && "❌ EXPIRED MEDICINE"}
+  {status==="not_found" && "❌ NO RECORD FOUND"}
+</div>
 
           </div>
 
@@ -230,6 +217,6 @@ export default function Verify(){
       </div>
 
     </div>
-
+</div>
   )
 }

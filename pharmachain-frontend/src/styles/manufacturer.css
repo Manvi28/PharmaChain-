@@ -1,0 +1,194 @@
+/* ================= GLOBAL BACKGROUND ================= */
+body{
+  margin:0;
+  font-family:'Segoe UI', sans-serif;
+
+  background: radial-gradient(circle at top, #bcc7e4, #5779c7);
+  color:rgb(255, 61, 61);
+}
+
+/* ================= PAGE WRAPPER ================= */
+.manufacturer-page{
+  min-height:100vh;
+  padding:40px 20px;
+
+  display:flex;
+  justify-content:center;
+}
+
+/* ================= GRID LAYOUT ================= */
+.manufacturer-grid{
+  width:100%;
+  max-width:1200px;
+
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:30px;
+}
+
+/* ================= CARD ================= */
+.manufacturer-card{
+  background: rgba(29, 50, 190, 0.08);
+  border: 1px solid rgba(13, 12, 12, 0.15);
+
+  backdrop-filter: blur(12px);
+
+  border-radius:16px;
+  padding:24px;
+
+  box-shadow:0 20px 50px rgba(0,0,0,0.4);
+
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+
+  transition:0.3s;
+}
+
+.manufacturer-card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 25px 60px rgba(6, 0, 0, 0.5);
+}
+
+/* ================= HEADINGS ================= */
+.manufacturer-card h2{
+  font-size:1.6rem;
+  margin-bottom:5px;
+}
+
+.manufacturer-card h3{
+  font-size:1.2rem;
+  margin-bottom:10px;
+  opacity:0.9;
+}
+
+/* ================= INPUT ================= */
+.manufacturer-card input{
+  
+  padding:14px;
+  box-sizing:border-box; 
+  border-radius:10px;
+  
+
+  background:rgba(255,255,255,0.12);
+  color:rgb(19, 18, 18);
+
+  font-size:0.95rem;
+ 
+  outline:none;
+  transition:0.25s;
+}
+
+.manufacturer-card input::placeholder{
+  color:#040404;
+  width: 100%;
+}
+
+.manufacturer-card input:focus{
+  border:1px solid #60a5fa;
+  box-shadow:0 0 12px rgba(96,165,250,0.5);
+  background:rgba(255,255,255,0.18);
+}
+
+/* DATE FIX */
+input[type="date"]{
+  color:rgb(0, 0, 0);
+}
+
+/* ================= BUTTON ================= */
+.manufacturer-card button{
+  padding:14px;
+
+  border:none;
+  border-radius:10px;
+
+  background:linear-gradient(135deg,#3b82f6,#9333ea);
+  color:white;
+
+  font-weight:600;
+  font-size:0.95rem;
+
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.manufacturer-card button:hover{
+  transform:scale(1.05);
+}
+
+/* ================= QR SECTION ================= */
+.qr-section{
+  text-align:center;
+  margin-top:10px;
+}
+
+.qr-section canvas{
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  margin:15px auto;
+  display:block;
+}
+
+.qr-section p{
+  font-size:11px;
+  word-break:break-all;
+  opacity:0.8;
+}
+
+/* ================= BATCH LIST ================= */
+.batch-list{
+  max-height:380px;
+  overflow-y:auto;
+}
+
+/* SCROLLBAR */
+.batch-list::-webkit-scrollbar{
+  width:6px;
+}
+
+.batch-list::-webkit-scrollbar-thumb{
+  background:#7c3aed;
+  border-radius:10px;
+}
+
+/* ================= SINGLE BATCH ================= */
+.batch-item{
+  background:#ffffff;
+  color:#111;
+
+  border-radius:12px;
+  padding:14px;
+
+  margin-top:10px;
+
+  box-shadow:0 10px 25px rgba(0,0,0,0.25);
+  transition:0.2s;
+}
+
+.batch-item:hover{
+  transform:scale(1.02);
+}
+
+/* STATUS */
+.batch-item p:last-child{
+  font-weight:bold;
+  color:#16a34a;
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:900px){
+
+.manufacturer-grid{
+  grid-template-columns:1fr;
+}
+
+.manufacturer-page{
+  padding:20px 10px;
+}
+
+.manufacturer-card{
+  padding:20px;
+}
+
+}
