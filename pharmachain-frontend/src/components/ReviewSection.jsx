@@ -10,7 +10,7 @@ export default function ReviewSection({ batchId, readOnly=false }) {
   const [user, setUser] = useState("");
 
   // 🔥 BASE URL (FIXED)
-  const BASE_URL = "http://localhost:5000";
+  const BASE_URL = "https://pharmachain-m05s.onrender.com";
 
   // 🔍 FETCH REVIEWS + ALERT
   async function fetchReviews() {
