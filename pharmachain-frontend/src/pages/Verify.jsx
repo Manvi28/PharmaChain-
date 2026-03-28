@@ -3,6 +3,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { ethers } from "ethers";
 import { getContract } from "../utils/contract";
 import { getBatches } from "../utils/batchStorage";
+import { addScan } from "../utils/batchStorage";
 import "../styles/verify.css";
 import ReviewSection from "../components/ReviewSection";
 
@@ -14,6 +15,11 @@ export default function Verify(){
   const [trustScore,setTrustScore] = useState(0);
   const [status,setStatus] = useState("");
   const [error,setError] = useState("");
+
+  const [alert,setAlert] = useState(false);
+  const [alertDetails,setAlertDetails] = useState(null);
+
+  const BASE_URL = "http://localhost:5000";
 
   // 🔍 FETCH DATA
   async function fetchBatch(id){
@@ -35,7 +41,26 @@ export default function Verify(){
       const batches = getBatches();
       const localBatch = batches.find(b => b.batchId === id);
 
-      // 🔥 PRIORITY LOGIC (VERY IMPORTANT)
+      // 🔥 RANDOM LOCATION (FOR TESTING)
+      const testLocations = ["Kolkata","Delhi","Mumbai","Chennai"];
+      const randomLocation = testLocations[Math.floor(Math.random()*testLocations.length)];
+
+      // 🔥 LOCAL SAVE
+      addScan(id, randomLocation);
+
+      // 🔥 SEND SCAN TO BACKEND
+      await fetch(`${BASE_URL}/scan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          batchId: id,
+          location: randomLocation
+        })
+      });
+
+      // 🔥 PRIORITY STATUS LOGIC
 
       // 1️⃣ RECALL
       if(Number(result.status) === 4){
@@ -92,6 +117,22 @@ export default function Verify(){
         setTrustScore(0);
       }
 
+      // 🔥 FRAUD ALERT CHECK (MULTI-LOCATION)
+      try{
+        const res = await fetch(`${BASE_URL}/alert/${id}`);
+        const alertData = await res.json();
+
+        setAlert(alertData.alert);
+        setAlertDetails(alertData.details);
+
+        if(alertData.alert){
+          setStatus("fraud");
+        }
+
+      }catch(err){
+        console.log("Alert API error:", err);
+      }
+
     }catch(err){
       console.log(err);
       setError("Error fetching batch. Check contract or network.");
@@ -136,10 +177,8 @@ export default function Verify(){
 
         <h2>Verify Medicine</h2>
 
-        {/* QR SCANNER */}
         <div id="reader"></div>
 
-        {/* INPUT */}
         <input
           placeholder="Enter Batch ID manually"
           value={batchId}
@@ -158,7 +197,7 @@ export default function Verify(){
           <p><b>Batch ID:</b> {batchId}</p>
         )}
 
-        {/* 🚨 RECALL ALERT */}
+        {/* 🚨 RECALL */}
         {status === "recalled" && (
           <div className="status-box status-error">
             🚨 RECALL ALERT 🚨 <br/>
@@ -166,11 +205,26 @@ export default function Verify(){
           </div>
         )}
 
+        {/* 🚨 FRAUD */}
+        {status === "fraud" && (
+          <div className="status-box status-error">
+            🚨 FAKE MEDICINE ALERT 🚨 <br/>
+            Same batch found in multiple locations.
+
+            {alertDetails?.locations && (
+              <ul>
+                {alertDetails.locations.map((loc,i)=>(
+                  <li key={i}>{loc}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* DETAILS */}
         {data && status !== "recalled" && (
 
           <div className="section">
-
             <h3>Medicine Details</h3>
 
             <p><b>Name:</b> {data.medicineName}</p>
@@ -180,19 +234,15 @@ export default function Verify(){
               new Date(Number(data.expiryDate) * 1000).toLocaleDateString()
             }</p>
 
-            <p><b>Current Owner:</b> {
+            <p><b>Owner:</b> {
               `${data.currentOwner.slice(0,6)}...${data.currentOwner.slice(-4)}`
             }</p>
-
           </div>
-
         )}
 
         {/* SUPPLY CHAIN */}
         {history.length > 0 && status !== "recalled" && (
-
           <div className="section">
-
             <h3>Supply Chain</h3>
 
             {history.map((h,i)=>(
@@ -200,29 +250,19 @@ export default function Verify(){
                 {h.step} → {h.owner.slice(0,6)}...{h.owner.slice(-4)}
               </div>
             ))}
-
           </div>
-
         )}
 
-        {/* TRUST SCORE */}
+        {/* TRUST */}
         {trustScore > 0 && status !== "recalled" && (
-
           <div className="section">
-
             <h3>Trust Score</h3>
-
-            <div className="trust-score">
-              <div className="trust-value">{trustScore}/100</div>
-            </div>
-
+            <div className="trust-value">{trustScore}/100</div>
           </div>
-
         )}
 
         {/* FINAL STATUS */}
         {status && status !== "recalled" && (
-
           <div className="section">
 
             <h3>Verification Result</h3>
@@ -234,19 +274,20 @@ export default function Verify(){
               ${status==="not_found"?"status-error":""}
               ${status==="damaged"?"status-error":""}
               ${status==="sold"?"status-auth":""}
+              ${status==="fraud"?"status-error":""}
             `}>
 
-              {status==="authentic" && "✔ AUTHENTIC MEDICINE"}
-              {status==="suspicious" && "⚠ SUSPICIOUS PRODUCT"}
-              {status==="expired" && "❌ EXPIRED MEDICINE"}
-              {status==="not_found" && "❌ NO RECORD FOUND"}
-              {status==="sold" && "✔ SOLD (Product lifecycle completed)"}
-              {status==="damaged" && "❌ DAMAGED / TAMPERED PRODUCT"}
+              {status==="authentic" && "✔ AUTHENTIC"}
+              {status==="suspicious" && "⚠ SUSPICIOUS"}
+              {status==="expired" && "❌ EXPIRED"}
+              {status==="not_found" && "❌ NOT FOUND"}
+              {status==="sold" && "✔ SOLD"}
+              {status==="damaged" && "❌ DAMAGED"}
+              {status==="fraud" && "🚨 FAKE DETECTED"}
 
             </div>
 
           </div>
-
         )}
 
         {/* REVIEWS */}

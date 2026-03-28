@@ -12,7 +12,8 @@ reviews_db = {}
 def home():
     return "Backend running!"
 
-# 🔥 ADD REVIEW (matches frontend: /submit-review)
+
+# 🔥 ADD REVIEW (MANUAL USER INPUT)
 @app.route("/submit-review", methods=["POST"])
 def submit_review():
     data = request.json
@@ -40,13 +41,45 @@ def submit_review():
     return jsonify({"message": "Review submitted successfully"})
 
 
+# 🔥 SCAN API (AUTO TRACK LOCATION)
+@app.route("/scan", methods=["POST"])
+def scan_product():
+    data = request.json
+
+    batch_id = data.get("batchId")
+    location = data.get("location", "Unknown")
+
+    if not batch_id:
+        return jsonify({"error": "Missing batchId"}), 400
+
+    if batch_id not in reviews_db:
+        reviews_db[batch_id] = []
+
+    # 🔥 PREVENT SAME LOCATION SPAM
+    existing_locations = [r.get("location") for r in reviews_db[batch_id]]
+    if location in existing_locations:
+        return jsonify({"message": "Already scanned at this location"})
+
+    scan_data = {
+        "review": "scan",
+        "user": "scanner",
+        "location": location,
+        "pharmacy": "scan-system",
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    reviews_db[batch_id].append(scan_data)
+
+    return jsonify({"message": "Scan recorded"})
+
+
 # 🔹 GET REVIEWS
 @app.route("/get-reviews/<batch_id>", methods=["GET"])
 def get_reviews(batch_id):
     return jsonify(reviews_db.get(batch_id, []))
 
 
-# 🔥 FRAUD ALERT LOGIC (BATCH LEVEL)
+# 🔥 FRAUD ALERT SYSTEM
 @app.route("/alert/<batch_id>", methods=["GET"])
 def check_alert(batch_id):
     reviews = reviews_db.get(batch_id, [])
@@ -54,34 +87,49 @@ def check_alert(batch_id):
     if not reviews:
         return jsonify({"alert": False})
 
-    # 🔹 Rule 1: fake keyword detection
+    # 🔹 Extract locations
+    locations = [r.get("location", "Unknown") for r in reviews]
+    unique_locations = list(set(locations))
+
+    # 🔹 Count fake reviews (optional feature)
     fake_count = sum(
         1 for r in reviews
         if "fake" in r["review"].lower()
     )
 
-    # 🔹 Rule 2: too many reviews in short time (simple anomaly)
-    recent_reviews = len(reviews)
-
-    # 🔹 Basic risk scoring
-    risk_score = 0
-
-    if fake_count >= 2:
-        risk_score += 3
-
-    if recent_reviews > 10:
-        risk_score += 2
-
-    if risk_score >= 3:
+    # 🔥 MAIN FRAUD DETECTION (MULTI-LOCATION)
+    if len(unique_locations) > 1:
         return jsonify({
             "alert": True,
-            "message": "⚠️ Suspicious batch detected"
+            "message": "🚨 Same batch found in multiple locations",
+            "details": {
+                "locations": unique_locations,
+                "total_scans": len(reviews),
+                "fake_reviews": fake_count
+            }
         })
 
-    return jsonify({"alert": False})
+    # 🔹 Optional: suspicious based on fake keyword
+    if fake_count >= 2:
+        return jsonify({
+            "alert": True,
+            "message": "⚠️ Multiple users reported this product as fake",
+            "details": {
+                "locations": unique_locations,
+                "fake_reviews": fake_count
+            }
+        })
+
+    return jsonify({
+        "alert": False,
+        "details": {
+            "locations": unique_locations,
+            "total_scans": len(reviews)
+        }
+    })
 
 
-# 🔥 OPTIONAL: CLEAR DATA (for testing)
+# 🔥 CLEAR DATA (TESTING)
 @app.route("/clear", methods=["POST"])
 def clear_data():
     reviews_db.clear()

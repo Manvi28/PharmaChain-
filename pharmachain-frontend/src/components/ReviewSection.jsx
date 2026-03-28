@@ -7,14 +7,18 @@ export default function ReviewSection({ batchId, readOnly=false }) {
   const [reviews, setReviews] = useState([]);
   const [alertMsg, setAlertMsg] = useState("");
   const [pharmacy, setPharmacy] = useState("");
-  const [user, setUser] = useState(""); // 🔥 NEW
+  const [user, setUser] = useState("");
 
+  // 🔥 BASE URL (FIXED)
+  const BASE_URL = "http://localhost:5000";
+
+  // 🔍 FETCH REVIEWS + ALERT
   async function fetchReviews() {
     try {
-      const res = await axios.get(`http://127.0.0.1:5000/get-reviews/${batchId}`);
+      const res = await axios.get(`${BASE_URL}/get-reviews/${batchId}`);
       setReviews(res.data);
 
-      const alertRes = await axios.get(`http://127.0.0.1:5000/alert/${batchId}`);
+      const alertRes = await axios.get(`${BASE_URL}/alert/${batchId}`);
 
       if (alertRes.data.alert) {
         setAlertMsg(alertRes.data.message);
@@ -23,7 +27,7 @@ export default function ReviewSection({ batchId, readOnly=false }) {
       }
 
     } catch (err) {
-      console.log(err);
+      console.log("Fetch error:", err);
     }
   }
 
@@ -31,6 +35,7 @@ export default function ReviewSection({ batchId, readOnly=false }) {
     if (batchId) fetchReviews();
   }, [batchId]);
 
+  // 🔥 SUBMIT REVIEW
   async function handleSubmit() {
 
     if (!review || !pharmacy || !user) {
@@ -38,10 +43,13 @@ export default function ReviewSection({ batchId, readOnly=false }) {
       return;
     }
 
-    let location = "Unknown";
+    // 🔥 RANDOM LOCATION (FOR DEMO TESTING)
+    const testLocations = ["Kolkata","Delhi","Mumbai","Chennai"];
+    let location = testLocations[Math.floor(Math.random() * testLocations.length)];
 
-    await new Promise((resolve) => {
-      if (navigator.geolocation) {
+    // 🔥 GPS (OPTIONAL - OVERRIDES RANDOM)
+    if (navigator.geolocation) {
+      await new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             location = `${pos.coords.latitude}, ${pos.coords.longitude}`;
@@ -49,29 +57,30 @@ export default function ReviewSection({ batchId, readOnly=false }) {
           },
           () => resolve()
         );
-      } else {
-        resolve();
-      }
-    });
+      });
+    }
 
     const data = {
       batchId,
       review,
-      user, // 🔥 NOW FROM INPUT
+      user,
       location,
       pharmacy
     };
 
     try {
-      await axios.post("http://127.0.0.1:5000/submit-review", data);
+      await axios.post(`${BASE_URL}/submit-review`, data);
 
+      // 🔄 RESET FORM
       setReview("");
       setPharmacy("");
-      setUser(""); // 🔥 CLEAR INPUT
+      setUser("");
+
+      // 🔄 REFRESH DATA
       fetchReviews();
 
     } catch (err) {
-      console.log(err);
+      console.log("Submit error:", err);
     }
   }
 
@@ -80,11 +89,14 @@ export default function ReviewSection({ batchId, readOnly=false }) {
 
       <h4>Reviews</h4>
 
+      {/* 🚨 ALERT MESSAGE */}
       {alertMsg && (
-        <p style={{ color: "red" }}>{alertMsg}</p>
+        <p style={{ color: "red", fontWeight: "bold" }}>
+          🚨 {alertMsg}
+        </p>
       )}
 
-      {/* 🔥 ONLY FOR USERS */}
+      {/* ✍️ INPUT SECTION */}
       {!readOnly && (
         <>
           <input
@@ -116,6 +128,7 @@ export default function ReviewSection({ batchId, readOnly=false }) {
         </>
       )}
 
+      {/* 📋 REVIEW LIST */}
       {reviews.length === 0 ? (
         <p>No reviews yet</p>
       ) : (
