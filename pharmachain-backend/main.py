@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -8,6 +9,7 @@ CORS(app)
 # 🔹 In-memory DB (for demo)
 reviews_db = {}
 
+# ✅ HEALTH CHECK ROUTE (IMPORTANT FOR RENDER)
 @app.route("/")
 def home():
     return "Backend running!"
@@ -91,7 +93,7 @@ def check_alert(batch_id):
     locations = [r.get("location", "Unknown") for r in reviews]
     unique_locations = list(set(locations))
 
-    # 🔹 Count fake reviews (optional feature)
+    # 🔹 Count fake reviews
     fake_count = sum(
         1 for r in reviews
         if "fake" in r["review"].lower()
@@ -109,7 +111,7 @@ def check_alert(batch_id):
             }
         })
 
-    # 🔹 Optional: suspicious based on fake keyword
+    # 🔹 Suspicious based on fake keyword
     if fake_count >= 2:
         return jsonify({
             "alert": True,
@@ -136,5 +138,7 @@ def clear_data():
     return jsonify({"message": "All data cleared"})
 
 
+# ✅ IMPORTANT: RENDER DEPLOY FIX
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
